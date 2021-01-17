@@ -3,6 +3,7 @@
 #include <stdlib.h>     // rand()
 #include <time.h>       // initialisierung des Zufallsgenerators
 #include <stdbool.h>	// boolean
+#include <math.h>
 
 #define MinRowCount 2
 #define MaxRowCount 6
@@ -15,9 +16,10 @@ void GeneratePlayground(int32_t* playground);
 void ManuallyCreatePlayground(int32_t* playground);
 void ShowPlayground(int32_t* playground);
 void UsersTurn(int32_t* playground);
-void ComputersTurn(int32_t* playground);
+void RandomComputerTurn(int32_t* playground);
 bool IsWinner(int32_t* playground);
 void ShowWinner(bool playersTurn);
+void SmartComputerTurn(int32_t* playgorund);
 void PlayGame();
 
 
@@ -66,6 +68,9 @@ bool ReadYesOrNoInput(char* askText)
 	}
 }
 
+/// <summary>
+/// The Function which runs the game
+/// </summary>
 void PlayGame()
 {
 	bool playersTurn = false;
@@ -86,11 +91,15 @@ void PlayGame()
 			UsersTurn(playground);
 		}
 		else
-			ComputersTurn(playground);
-	} while (IsWinner(playground));
+			SmartComputerTurn(playground);
+	} while (!IsWinner(playground));
 	ShowWinner(playersTurn);
 }
 
+/// <summary>
+/// Creates a random playground
+/// </summary>
+/// <param name="playground">Pointer to the playground array</param>
 void GeneratePlayground(int32_t* playground)
 {
 	int rowCount = rand() % MaxRowCount + MinRowCount;
@@ -98,6 +107,10 @@ void GeneratePlayground(int32_t* playground)
 		playground[i] = rand() % MaxElements + 1;
 }
 
+/// <summary>
+/// Creates playground from users Input
+/// </summary>
+/// <param name="playground">Pointer to the playground array</param>
 void ManuallyCreatePlayground(int32_t* playground)
 {
 	printf("\nWie viele Reihen soll das Spiel haben?\n");
@@ -109,6 +122,10 @@ void ManuallyCreatePlayground(int32_t* playground)
 	}
 }
 
+/// <summary>
+/// Shows the playground
+/// </summary>
+/// <param name="playground">Pointer to the playground array</param>
 void ShowPlayground(int32_t* playground)
 {
 	for (size_t i = 0; i < MaxRowCount; i++)
@@ -121,6 +138,10 @@ void ShowPlayground(int32_t* playground)
 	}
 }
 
+/// <summary>
+/// Updates the playground with the users inputs
+/// </summary>
+/// <param name="playground">Pointer to the playground array</param>
 void UsersTurn(int32_t* playground)
 {
 	int16_t i = 0;
@@ -132,14 +153,18 @@ void UsersTurn(int32_t* playground)
 	{
 		if (row != -1)
 			printf("\nDiese Reihe hat keine Elemente. Bitte erneut versuchen.\n");
-		row = ReadNumberInRange(0, i) - 1;
+		row = ReadNumberInRange(1, i) - 1;
 	} while (playground[row] == 0);
 	printf("\nWie viele Elemente sollen entfernt werden?\n");
 	int32_t elements = ReadNumberInRange(MinElements, playground[row]);
 	playground[row] -= elements;
 }
 
-void ComputersTurn(int32_t* playground)
+/// <summary>
+/// Makes a random turn and subtracts it from playground
+/// </summary>
+/// <param name="playground">Pointer to the playground array</param>
+void RandomComputerTurn(int32_t* playground)
 {
 	int32_t row;
 	int32_t elements;
@@ -155,18 +180,27 @@ void ComputersTurn(int32_t* playground)
 	printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", elements, row + 1);
 }
 
+/// <summary>
+/// Finds out if no elements are in rows
+/// </summary>
+/// <param name="playground">Pointer to the playground array</param>
+/// <returns>If no elements: true, if any elements: false</returns>
 bool IsWinner(int32_t* playground)
 {
 	for (size_t i = 0; i < MaxRowCount; i++)
 	{
 		if (playground[i] == -1)
-			return false;
-		if (playground[i] > 0)
 			return true;
+		if (playground[i] > 0)
+			return false;
 	}
 	return true;
 }
 
+/// <summary>
+/// Shows the winner
+/// </summary>
+/// <param name="playersTurn">true if player moved</param>
 void ShowWinner(bool playersTurn) 
 {
 	printf("***");
@@ -175,4 +209,86 @@ void ShowWinner(bool playersTurn)
 	else
 		printf("\nDer Computer ist der Sieger.\n");
 	printf("***\n\n");
+}
+
+/// <summary>
+/// Function to make some smart moves. If no smart move found, make random move
+/// </summary>
+/// <param name="playgorund"></param>
+void SmartComputerTurn(int32_t* playgorund) {
+	int32_t rowsWithElements = 0;
+	int32_t i = 0;
+	while (rowsWithElements <= 2 && playgorund[i] >= 0)
+	{
+		if (playgorund[i] > 0)
+			rowsWithElements++;
+		i++;
+	}
+	i = 0;
+	// if only one row with elements, remove all
+	if (rowsWithElements == 1)
+	{
+		while (playgorund[i] >= 0)
+		{
+			if (playgorund[i] > 0)
+			{
+				printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", playgorund[i], i + 1);
+				playgorund[i] = 0;
+				return;
+			}
+			i++;
+		}
+	}
+	// if two rows, create two rows with same count of elements
+	if (rowsWithElements == 2)
+	{
+		int32_t firstRowWithElements = -1;
+		int32_t secondRowWithElements = -1;
+		while (playgorund[i] >= 0)
+		{
+			if (playgorund[i] >= 0)
+			{
+				if (firstRowWithElements >= 0)
+					secondRowWithElements = i;
+				else
+					firstRowWithElements = i;
+			}
+			i++;
+		}
+		if (playgorund[firstRowWithElements] > playgorund[secondRowWithElements])
+		{
+			printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", playgorund[firstRowWithElements] - playgorund[secondRowWithElements], firstRowWithElements + 1);
+			playgorund[firstRowWithElements] -= playgorund[firstRowWithElements] - playgorund[secondRowWithElements];
+			return;
+		}
+		else if (playgorund[firstRowWithElements] < playgorund[secondRowWithElements])
+		{
+			printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", playgorund[secondRowWithElements] - playgorund[firstRowWithElements], secondRowWithElements + 1);
+			playgorund[secondRowWithElements] -= playgorund[secondRowWithElements] - playgorund[firstRowWithElements];
+			return;
+		}
+	}
+	RandomComputerTurn(playgorund);
+
+
+	/*uint32_t playgorundBinaries[MaxRowCount][3];
+	for (int i = 0; i < MaxRowCount; i++)
+		for (int j = 0; j <= 3; j++)
+		{
+			playgorundBinaries[i][j] = 0;
+		}
+		
+	uint32_t k = 0;
+	uint32_t l = 0;
+
+	while (playgorund[k] >= 0)
+	{
+		int x = playgorund[k];
+		for (l = 0; x > 0; l++)
+		{
+			playgorundBinaries[k][l] += x % 2;
+			x = x / 2;
+		}
+		k++;
+	}*/
 }
