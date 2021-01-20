@@ -3,15 +3,17 @@
 #include <stdlib.h>     // rand()
 #include <time.h>       // initialisierung des Zufallsgenerators
 #include <stdbool.h>	// boolean
-#include <string.h>		// memcpy
+
+#pragma warning(disable: 4129 244)
 
 struct Playground {
 	int16_t playGroundArray[6];
 	int16_t rowCount;
 };
 
-int16_t ReadNumberInRange(int16_t minRange, int16_t maxRange);
+void PlayGame();
 bool ReadYesOrNoInput(char* askText);
+int16_t ReadNumberInRange(int16_t minRange, int16_t maxRange);
 void GeneratePlayground(struct Playground* playground);
 void ManuallyCreatePlayground(struct Playground* playground);
 void ShowPlayground(struct Playground playground);
@@ -20,7 +22,6 @@ void RandomComputerTurn(struct Playground* playground);
 bool IsWinner(struct Playground playground);
 void ShowWinner(bool playersTurn);
 void SmartComputerTurn(struct Playground* playgorund);
-void PlayGame();
 
 int main() {
 	srand(time(NULL));
@@ -29,43 +30,7 @@ int main() {
 	{
 		PlayGame();
 	}
-	printf("\nBis zum n\x84\chsten Mal!");
-}
-
-int16_t ReadNumberInRange(int16_t minRange, int16_t maxRange) {
-	int16_t number = 0;
-	while (true)
-	{
-		scanf_s("%hu", &number);
-		while (getchar() != '\n'); // this is needed to clear the buffer!
-		if (number >= minRange && number <= maxRange)
-			return number;
-		else
-			printf("Zahl zu gross oder zu klein. Bitte erneut versuchen (Min: %i, Max: %i).\n", minRange, maxRange);
-	}
-}
-
-/// <summary>
-/// Shows a message to ask and reads input. 
-/// </summary>
-/// <param name="askText">Text to show to the user (usually a question)</param>
-/// <returns>true if input is 'y' and false if input is 'n'</returns>
-bool ReadYesOrNoInput(char* askText)
-{
-	char input = '\0';
-	printf(askText);
-	while (input != 'y' && input != 'n')
-	{
-		scanf_s("%c", &input, 1);
-		while (getchar() != '\n');
-		if (input == 'y')
-			return true;
-		else if (input == 'n')
-			return false;
-		else
-			printf("Ung\x81\ltige Eingabe. Bitte erneut versuchen.\n");
-	}
-	return false;
+	printf("\nBis zum n\x84\chsten Mal!\n\n\n");
 }
 
 /// <summary>
@@ -92,6 +57,42 @@ void PlayGame()
 			SmartComputerTurn(&playground);
 	} while (!IsWinner(playground));
 	ShowWinner(playersTurn);
+}
+
+/// <summary>
+/// Shows a message to ask and reads input. 
+/// </summary>
+/// <param name="askText">Text to show to the user (usually a question)</param>
+/// <returns>true if input is 'y' and false if input is 'n'</returns>
+bool ReadYesOrNoInput(char* askText)
+{
+	char input = '\0';
+	printf(askText);
+	while (input != 'y' && input != 'n')
+	{
+		scanf_s("%c", &input, 1);
+		while (getchar() != '\n');
+		if (input == 'y')
+			return true;
+		else if (input == 'n')
+			return false;
+		else
+			printf("Ung\x81\ltige Eingabe. Bitte erneut versuchen.\n");
+	}
+	return false;
+}
+
+int16_t ReadNumberInRange(int16_t minRange, int16_t maxRange) {
+	int16_t number = 0;
+	while (true)
+	{
+		scanf_s("%hu", &number);
+		while (getchar() != '\n'); // this is needed to clear the buffer!
+		if (number >= minRange && number <= maxRange)
+			return number;
+		else
+			printf("Ung\x81\ltige Eingabe. Bitte erneut versuchen (Min: %i, Max: %i).\n", minRange, maxRange);
+	}
 }
 
 /// <summary>
@@ -140,12 +141,11 @@ void ShowPlayground(struct Playground playground)
 /// <param name="playground">Pointer to the playground struct</param>
 void UsersTurn(struct Playground* playground)
 {
-	int8_t i = 0;
 	int16_t row = -1;
 	printf("\n\nAus welcher Reihe sollen Elemente entfernt werden?\n");
 	do
 	{
-		if (row > playground->rowCount || playground->playGroundArray[row] == 0)
+		if (row >= 0 && (row > playground->rowCount || playground->playGroundArray[row] == 0))
 			printf("\nDiese Reihe hat keine Elemente. Bitte erneut versuchen.\n");
 		row = ReadNumberInRange(1, playground->rowCount) - 1;
 	} while (playground->playGroundArray[row] == 0);
@@ -160,12 +160,12 @@ void UsersTurn(struct Playground* playground)
 /// <param name="playground">Pointer to the playground struct</param>
 void RandomComputerTurn(struct Playground* playground)
 {
-	int16_t row;
-	int16_t elements;
+	int16_t row = 0;
+	int16_t elements = 0;
 	do
 	{
 		row = rand() % playground->rowCount;
-	} while (playground->playGroundArray[row] <= 0 || row > 6);
+	} while (row < 0 || playground->playGroundArray[row] <= 0);
 	do
 	{
 		elements = rand() % playground->playGroundArray[row] + 1;
@@ -193,12 +193,12 @@ bool IsWinner(struct Playground playground)
 /// <param name="playersTurn">true if player moved</param>
 void ShowWinner(bool playersTurn)
 {
-	printf("***");
+	printf("\n\n*************************************");
 	if (playersTurn)
 		printf("\nSie haben Gewonnen! Herzlichen Gl\x81\ckwunsch.\n\n");
 	else
 		printf("\nDer Computer ist der Sieger.\n");
-	printf("***\n\n");
+	printf("*************************************\n\n");
 }
 
 /// <summary>
@@ -211,9 +211,7 @@ void ShowWinner(bool playersTurn)
 void SmartComputerTurn(struct Playground* playground) {
 	int16_t xorSum = 0;
 	for (int16_t i = 0; i < playground->rowCount; i++)
-	{
 		xorSum ^= playground->playGroundArray[i];
-	}
 	if (xorSum != 0)
 	{
 		int16_t elementesToRemove = 0;
@@ -229,93 +227,5 @@ void SmartComputerTurn(struct Playground* playground) {
 		}
 	}
 	else
-	{
 		RandomComputerTurn(playground);
-	}
-
-
-	//int16_t playgroundBinaries[6][3];
-	//for (int16_t i = 0; i < playground->rowCount; i++)
-	//	for (int16_t j = 0; j < 3; j++)
-	//		playgroundBinaries[i][j] = 0;
-
-	//for (int16_t i = 0; i < playground->rowCount; i++)
-	//{
-	//	uint16_t x = playground->playGroundArray[i];
-	//	for (uint16_t j = 0; x > 0; j++)
-	//	{
-	//		playgroundBinaries[i][j] += x % 2;
-	//		x /= 2;
-	//	}
-	//}
-
-	//uint16_t isEven[3] = { 1, 1, 1 };
-	//for (uint16_t i = 0; i < 3; i++)
-	//{
-	//	for (uint16_t j = 0; j < playground->rowCount; j++)
-	//		isEven[i] = isEven[i] ^ playgroundBinaries[j][i];
-	//}
-
-	//if (isEven[0] == 1 && isEven[1] == 1 && isEven[2] == 1)
-	//{
-	//	RandomComputerTurn(playground);
-	//	return;
-	//}
-
-	//int16_t sortedPlayground[6] = { 0 };
-	//memcpy(sortedPlayground, playground->playGroundArray, sizeof(playground->playGroundArray));
-	//for (int i = 0; i < playground->rowCount; i++)
-	//{
-	//	for (int j = 0; j < playground->rowCount; j++)
-	//	{
-	//		if (sortedPlayground[j] < sortedPlayground[i])
-	//		{
-	//			int tmp = sortedPlayground[i];
-	//			sortedPlayground[i] = sortedPlayground[j];
-	//			sortedPlayground[j] = tmp;
-	//		}
-	//	}
-	//}
-
-	//int16_t rowToRemove = -1;
-	//int16_t sortedIndex = 0;
-	//for (int16_t i = 0; i < playground->rowCount; i++)
-	//{
-	//	if (playground->playGroundArray[i] == sortedPlayground[sortedIndex])
-	//	{
-	//		for (size_t j = 0; j < 3; j++)
-	//		{
-	//			if (isEven[j] == 1)
-	//			{
-	//				continue;
-	//			}
-	//			if (playgroundBinaries[i][j] == 1)
-	//			{
-	//				rowToRemove = i;
-	//			}
-	//			else
-	//				rowToRemove = -1;
-	//		}
-	//		if (rowToRemove != -1)
-	//			break;
-	//		else
-	//			sortedIndex++;
-	//	}
-	//}
-
-	//uint16_t binaryNumber = 1;
-	//uint16_t elementsToRemove = 0;
-	//for (uint16_t i = 0; i < 3; i++)
-	//{
-	//	if (isEven[i] == 0)
-	//		elementsToRemove += binaryNumber;
-	//	binaryNumber *= 2;
-	//}
-	//if (rowToRemove != -1 && elementsToRemove > 0 && elementsToRemove <= playground->playGroundArray[rowToRemove])
-	//{
-	//	printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", elementsToRemove, rowToRemove + 1);
-	//	playground->playGroundArray[rowToRemove] -= elementsToRemove;
-	//}
-	//else
-	//	RandomComputerTurn(playground);
 }
