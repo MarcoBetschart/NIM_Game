@@ -3,10 +3,11 @@
 #include <stdlib.h>     // rand()
 #include <time.h>       // initialisierung des Zufallsgenerators
 #include <stdbool.h>	// boolean
+#include <string.h>		// memcpy
 
 struct Playground {
-	uint16_t playGroundArray[6];
-	uint16_t rowCount;
+	int16_t playGroundArray[6];
+	int16_t rowCount;
 };
 
 int16_t ReadNumberInRange(int16_t minRange, int16_t maxRange);
@@ -21,9 +22,8 @@ void ShowWinner(bool playersTurn);
 void SmartComputerTurn(struct Playground* playgorund);
 void PlayGame();
 
-
 int main() {
-	srand(time(0));
+	srand(time(NULL));
 	printf("Willkommen zum NIM-Spiel.\n\n");
 	while (ReadYesOrNoInput("M\x94\chten sie eine Runde NIM spielen? y/n\n"))
 	{
@@ -126,10 +126,10 @@ void ManuallyCreatePlayground(struct Playground* playground)
 /// <param name="playground">The playground array</param>
 void ShowPlayground(struct Playground playground)
 {
-	for (size_t i = 0; i < playground.rowCount; i++)
+	for (int16_t i = 0; i < playground.rowCount; i++)
 	{
 		printf("\nElemente in Reihe %i:", i + 1);
-		for (size_t j = 0; j < playground.playGroundArray[i]; j++)
+		for (int16_t j = 0; j < playground.playGroundArray[i]; j++)
 			printf(" | ");
 	}
 }
@@ -140,7 +140,7 @@ void ShowPlayground(struct Playground playground)
 /// <param name="playground">Pointer to the playground struct</param>
 void UsersTurn(struct Playground* playground)
 {
-	int16_t i = 0;
+	int8_t i = 0;
 	int16_t row = -1;
 	printf("\n\nAus welcher Reihe sollen Elemente entfernt werden?\n");
 	do
@@ -181,11 +181,9 @@ void RandomComputerTurn(struct Playground* playground)
 /// <returns>If no elements: true, if any elements: false</returns>
 bool IsWinner(struct Playground playground)
 {
-	for (size_t i = 0; i < playground.rowCount; i++)
-	{
+	for (int16_t i = 0; i < playground.rowCount; i++)
 		if (playground.playGroundArray[i] > 0)
 			return false;
-	}
 	return true;
 }
 
@@ -204,103 +202,120 @@ void ShowWinner(bool playersTurn)
 }
 
 /// <summary>
-/// Function to make some smart moves. 
+/// Function to make smart moves. 
 /// Removes as many items from highest, that all bits are even
 /// If highest has wrong bits, it uses second highest and so on.
 /// See scheme on https://www.hep-verlag.ch/pub/media/import/public/6486/mathematikaufgaben.pdf
 /// </summary>
 /// <param name="playgorund">Pointer to the playground struct</param>
 void SmartComputerTurn(struct Playground* playground) {
-	int16_t playgroundBinaries[6][3];
+	int16_t xorSum = 0;
 	for (int16_t i = 0; i < playground->rowCount; i++)
-		for (int16_t j = 0; j < 3; j++)
-			playgroundBinaries[i][j] = 0;
-
-	for (size_t i = 0; i < playground->rowCount; i++)
 	{
-		uint16_t x = playground->playGroundArray[i];
-		for (uint16_t j = 0; x > 0; j++)
-		{
-			playgroundBinaries[i][j] += x % 2;
-			x /= 2;
-		}
+		xorSum ^= playground->playGroundArray[i];
 	}
-
-	uint16_t isEven[3] = { 1, 1, 1 };
-	for (uint16_t i = 0; i < 3; i++)
+	if (xorSum != 0)
 	{
-		for (uint16_t j = 0; j < playground->rowCount; j++)
+		int16_t elementesToRemove = 0;
+		for (int16_t i = 0; i < playground->rowCount; i++)
 		{
-			isEven[i] = isEven[i] ^ playgroundBinaries[j][i];
-		}
-	}
-
-	if (isEven[0] == 1 && isEven[1] == 1 && isEven[2] == 1)
-	{
-		RandomComputerTurn(playground);
-		return;
-	}
-
-	uint16_t sortedPlayground[6];
-	memcpy(sortedPlayground, playground->playGroundArray, sizeof(playground->playGroundArray));
-	for (int i = 0; i < playground->rowCount; i++)
-	{
-		for (int j = 0; j < playground->rowCount; j++)
-		{
-			if (sortedPlayground[j] < sortedPlayground[i])
+			elementesToRemove = playground->playGroundArray[i] ^ xorSum;
+			if (elementesToRemove < playground->playGroundArray[i])
 			{
-				int tmp = sortedPlayground[i];
-				sortedPlayground[i] = sortedPlayground[j];
-				sortedPlayground[j] = tmp;
+				printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", playground->playGroundArray[i] - elementesToRemove, i + 1);
+				playground->playGroundArray[i] = elementesToRemove;
+				return;
 			}
 		}
-	}
-
-	int16_t rowToRemove = -1;
-	int16_t sortedIndex = 0;
-	for (size_t i = 0; i < playground->rowCount; i++)
-	{
-		if (playground->playGroundArray[i] == sortedPlayground[sortedIndex])
-		{
-			for (size_t j = 0; j < 3; j++)
-			{
-				if (isEven[j] == 1)
-				{
-					continue;
-				}
- 				if (playgroundBinaries[i][j] == 1)
-				{
-					rowToRemove = i;
-				}
-				else
-					rowToRemove = -1;
-			}
-			if (rowToRemove != -1)
-			{
-				break;
-			}
-			else
-				sortedIndex++;
-		}
-	}
-
-	uint16_t binaryNumber = 1;
-	uint16_t elementsToRemove = 0;
-	for (uint16_t i = 0; i < 3; i++)
-	{
-		if (isEven[i] == 0)
-		{
-			elementsToRemove += binaryNumber;
-		}
-		binaryNumber *= 2;
-	}
-	if (rowToRemove != -1 && elementsToRemove > 0 && elementsToRemove <= playground->playGroundArray[rowToRemove])
-	{
-		printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", elementsToRemove, rowToRemove + 1);
-		playground->playGroundArray[rowToRemove] -= elementsToRemove;
 	}
 	else
 	{
 		RandomComputerTurn(playground);
 	}
+
+
+	//int16_t playgroundBinaries[6][3];
+	//for (int16_t i = 0; i < playground->rowCount; i++)
+	//	for (int16_t j = 0; j < 3; j++)
+	//		playgroundBinaries[i][j] = 0;
+
+	//for (int16_t i = 0; i < playground->rowCount; i++)
+	//{
+	//	uint16_t x = playground->playGroundArray[i];
+	//	for (uint16_t j = 0; x > 0; j++)
+	//	{
+	//		playgroundBinaries[i][j] += x % 2;
+	//		x /= 2;
+	//	}
+	//}
+
+	//uint16_t isEven[3] = { 1, 1, 1 };
+	//for (uint16_t i = 0; i < 3; i++)
+	//{
+	//	for (uint16_t j = 0; j < playground->rowCount; j++)
+	//		isEven[i] = isEven[i] ^ playgroundBinaries[j][i];
+	//}
+
+	//if (isEven[0] == 1 && isEven[1] == 1 && isEven[2] == 1)
+	//{
+	//	RandomComputerTurn(playground);
+	//	return;
+	//}
+
+	//int16_t sortedPlayground[6] = { 0 };
+	//memcpy(sortedPlayground, playground->playGroundArray, sizeof(playground->playGroundArray));
+	//for (int i = 0; i < playground->rowCount; i++)
+	//{
+	//	for (int j = 0; j < playground->rowCount; j++)
+	//	{
+	//		if (sortedPlayground[j] < sortedPlayground[i])
+	//		{
+	//			int tmp = sortedPlayground[i];
+	//			sortedPlayground[i] = sortedPlayground[j];
+	//			sortedPlayground[j] = tmp;
+	//		}
+	//	}
+	//}
+
+	//int16_t rowToRemove = -1;
+	//int16_t sortedIndex = 0;
+	//for (int16_t i = 0; i < playground->rowCount; i++)
+	//{
+	//	if (playground->playGroundArray[i] == sortedPlayground[sortedIndex])
+	//	{
+	//		for (size_t j = 0; j < 3; j++)
+	//		{
+	//			if (isEven[j] == 1)
+	//			{
+	//				continue;
+	//			}
+	//			if (playgroundBinaries[i][j] == 1)
+	//			{
+	//				rowToRemove = i;
+	//			}
+	//			else
+	//				rowToRemove = -1;
+	//		}
+	//		if (rowToRemove != -1)
+	//			break;
+	//		else
+	//			sortedIndex++;
+	//	}
+	//}
+
+	//uint16_t binaryNumber = 1;
+	//uint16_t elementsToRemove = 0;
+	//for (uint16_t i = 0; i < 3; i++)
+	//{
+	//	if (isEven[i] == 0)
+	//		elementsToRemove += binaryNumber;
+	//	binaryNumber *= 2;
+	//}
+	//if (rowToRemove != -1 && elementsToRemove > 0 && elementsToRemove <= playground->playGroundArray[rowToRemove])
+	//{
+	//	printf("\nDer Computer entfernt %i Elemente aus Reihe %i\n", elementsToRemove, rowToRemove + 1);
+	//	playground->playGroundArray[rowToRemove] -= elementsToRemove;
+	//}
+	//else
+	//	RandomComputerTurn(playground);
 }
