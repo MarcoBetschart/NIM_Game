@@ -202,9 +202,7 @@ void ShowWinner(bool playersTurn)
 }
 
 /// <summary>
-/// Function to make smart moves. 
-/// Removes as many items from highest, that all bits are even
-/// If highest has wrong bits, it uses second highest and so on.
+/// Function to make smart moves.
 /// See scheme on https://www.hep-verlag.ch/pub/media/import/public/6486/mathematikaufgaben.pdf
 /// </summary>
 /// <param name="playgorund">Pointer to the playground struct</param>
